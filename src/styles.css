@@ -93,6 +93,7 @@ html, body {
   box-shadow: 0 8px 40px #0008;
 }
 .stage[aria-busy="true"] #view { opacity: 0.75; }
+#view.zoom-actual { max-width: none; max-height: none; }
 .empty {
   position: absolute;
   inset: 0;
@@ -249,13 +250,21 @@ html, body {
   background: var(--bg-2);
 }
 .slider { display: grid; gap: 2px; min-width: 0; }
+/* 数值紧跟标签，不要用 space-between ——
+   否则"亮 0 暖"会连成一句，看不出 0 属于哪一根 */
 .slider-head {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
+  align-items: baseline;
+  gap: 8px;
   font-size: 11px;
   color: var(--fg-dim);
 }
-.slider-head .val { color: var(--fg); font-variant-numeric: tabular-nums; }
+.slider-head .val {
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+  min-width: 2.6em;
+}
 .slider input[type="range"] {
   appearance: none;
   width: 100%;

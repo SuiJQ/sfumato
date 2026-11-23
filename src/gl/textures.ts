@@ -39,6 +39,7 @@ export function uploadMaskData(
   width: number,
   height: number,
 ): void {
+  gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, tex);
   gl.texImage2D(
     gl.TEXTURE_2D, 0, gl.RGBA8, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE,
@@ -63,6 +64,7 @@ export function updateCurveTexture(
   tex: WebGLTexture,
   data: Float32Array,
 ): void {
+  gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_2D, tex);
   gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, 256, 1, gl.RGBA, gl.FLOAT, data);
 }
@@ -88,6 +90,7 @@ export function uploadLut(
   size: number,
   data: Uint8Array,
 ): void {
+  gl.activeTexture(gl.TEXTURE0);
   gl.bindTexture(gl.TEXTURE_3D, tex);
   gl.texSubImage3D(
     gl.TEXTURE_3D, 0, 0, 0, 0, size, size, size, gl.RGBA, gl.UNSIGNED_BYTE, data,

@@ -49,6 +49,8 @@ ctx.onmessage = async (event: MessageEvent<ExportRequest>) => {
 
     renderer = new Renderer(gl);
     renderer.setSource(bitmap);
+    // 已上传到 GPU，位图不再需要；48MP 时这张图本身就占 190MB
+    bitmap.close();
     if (req.mask) renderer.setMask(req.mask, req.maskWidth, req.maskHeight);
     if (req.eyes) renderer.setEyes(req.eyes, req.eyeWidth, req.eyeHeight);
     renderer.setCurve(req.curve);

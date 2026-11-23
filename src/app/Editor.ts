@@ -753,12 +753,15 @@ export class Editor {
     if (mode === 'actual') {
       const size = this.renderer.size;
       if (!size) return;
+      // 去掉 max-width/max-height，否则 1:1 仍会被容器夹住
+      this.canvas.classList.add('zoom-actual');
       this.canvas.style.width = `${size.width}px`;
       this.canvas.style.height = `${size.height}px`;
       this.view.syncSize();
       this.requestRender();
       return;
     }
+    this.canvas.classList.remove('zoom-actual');
     this.fitCanvas();
     this.requestRender();
   }

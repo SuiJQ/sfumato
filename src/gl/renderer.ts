@@ -58,6 +58,8 @@ export class Renderer {
   private scratch: { fb: WebGLFramebuffer; tex: WebGLTexture; w: number; h: number } | null = null;
   private hasMask = false;
   private hasEyes = false;
+  private hasLut = false;
+  private lastCurve: Float32Array | null = null;
 
   constructor(gl: WebGL2RenderingContext) {
     this.gl = gl;
@@ -120,11 +122,20 @@ export class Renderer {
   }
 
   setCurve(data: Float32Array): void {
+    this.lastCurve = data;
     updateCurveTexture(this.gl, this.curveTex, data);
   }
 
   setLut(data: Uint8Array | null, size = LUT_SIZE): void {
-    uploadLut(this.gl, this.lutTex, size, data ?? identity3d(size));
+    if (size !== LUT_SIZE) {
+      // 纹理按 33³ 创建，写入别的尺寸会越界且静默失败
+      console.warn(`[renderer] LUT 尺寸必须是 ${LUT_SIZE}，收到 ${size}，已忽略`);
+      this.hasLut = false;
+      uploadLut(this.gl, this.lutTex, LUT_SIZE, identity3d(LUT_SIZE));
+      return;
+    }
+    this.hasLut = data !== null;
+    uploadLut(this.gl, this.lutTex, LUT_SIZE, data ?? identity3d(LUT_SIZE));
   }
 
   draw(uniforms: Float32Array, target: RenderTarget): void {
@@ -159,10 +170,17 @@ export class Renderer {
     gl.uniform2f(u.get('u_maskSize') ?? null, this.maskSize[0], this.maskSize[1]);
     gl.uniform1f(u.get('u_hasMask') ?? null, this.hasMask ? 1 : 0);
     gl.uniform1f(u.get('u_hasEye') ?? null, this.hasEyes ? 1 : 0);
-    gl.uniform1f(u.get('u_hasLut') ?? null, uniforms[6 * 4 + 2] > 1e-4 ? 1 : 0);
+    gl.uniform1f(u.get('u_hasLut') ?? null, this.hasLut && uniforms[6 * 4 + 2] > 1e-4 ? 1 : 0);
+
+    // 显示采样所处的 mip：原图比目标大多少倍
+    const maxTex = Math.max(this.source.width, this.source.height);
+    const maxTarget = Math.max(target.width, target.height);
+    gl.uniform1f(u.get('u_lodBase') ?? null, Math.max(0, Math.log2(maxTex / maxTarget)));
 
     gl.drawArrays(gl.TRIANGLES, 0, 3);
     gl.bindVertexArray(null);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
   }
 
   /**
@@ -196,6 +214,7 @@ export class Renderer {
     curve?: Float32Array,
   ): Uint8ClampedArray {
     const gl = this.gl;
+    const prevCurve = this.lastCurve;
     if (curve) this.setCurve(curve);
 
     if (!this.scratch || this.scratch.w !== width || this.scratch.h !== height) {
@@ -218,9 +237,18 @@ export class Renderer {
 
     try {
       this.draw(uniforms, { framebuffer: this.scratch.fb, width, height });
+      // draw() 收尾会解绑 FBO（为了不把状态漏给下一个调用者），
+      // 这里必须重新绑回离屏目标再校验/回读
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.scratch.fb);
+      const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
+      if (status !== gl.FRAMEBUFFER_COMPLETE) {
+        throw new Error(`离屏目标不完整 (0x${status.toString(16)})`);
+      }
       return this.readPixels(width, height, true);
     } finally {
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      // 调用方可能只想要这一张用别的曲线试算，不能把常驻曲线改掉
+      if (curve && prevCurve) this.setCurve(prevCurve);
     }
   }
 

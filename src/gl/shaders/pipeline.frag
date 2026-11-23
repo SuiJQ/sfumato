@@ -19,6 +19,7 @@ uniform vec2 u_res;         // 目标分辨率（像素）
 uniform vec2 u_maskSize;    // mask 分辨率
 uniform float u_hasMask;    // 0 / 1
 uniform float u_hasEye;     // 0 / 1
+uniform float u_lodBase;    // 显示采样所处的 mip 级（原图比画布大多少）
 uniform float u_hasLut;     // 0 / 1
 
 const vec3 LUMA = vec3(0.2126, 0.7152, 0.0722);
@@ -180,9 +181,16 @@ void main() {
 
   // 5. 区域权重提前取：皮肤要少加纹理，眼睛要多加
   vec4 m = sampleMask(uv);
+  // 三个通道是各自独立模糊后写入的，不保证和为 1（暖色天空可能 skin≈0.9 且 sky≈1.0）。
+  // 不归一的话 satMul 会比设计值高 30–60%，色度冲出 gamut 后被硬夹，表现为偏色/色带。
   float wSky = m.b;
   float wSkin = m.g;
   float wGreen = m.a;
+  float wSum = wSky + wSkin + wGreen;
+  float wNorm = 1.0 / max(1.0, wSum);
+  wSky *= wNorm;
+  wSkin *= wNorm;
+  wGreen *= wNorm;
   float wRest = max(0.0, 1.0 - wSky - wSkin - wGreen);
 
   // 5a. 眼神光：只有 FaceMesh 给出眼睛区域时才生效
@@ -198,7 +206,9 @@ void main() {
   float blurL = luma(textureLod(u_tex, uv, u_p[1].w).rgb);
   e += (Lraw - blurL) * u_p[1].z * guard * skinGuard;
 
-  float smL = luma(textureLod(u_tex, uv, 1.0).rgb);
+  // 与 c 的隐式 LOD 对齐：否则大图缩到画布时 Lraw 比 smL 更糊，
+  // 差值符号翻转，锐化会变成"反向光晕"
+  float smL = luma(textureLod(u_tex, uv, u_lodBase + 1.0).rgb);
   float d = clamp(Lraw - smL, -u_p[5].x, u_p[5].x) * u_p[4].w
           * (1.0 + 0.8 * wEye) * (1.0 - 0.45 * wSkin);
   e += d;

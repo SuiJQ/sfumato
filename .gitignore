@@ -5,3 +5,4 @@ tests/assets/*.png
 .DS_Store
 *.log
 tests/web/
+tests/edge/
