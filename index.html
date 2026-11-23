@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sfumato · 修图</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23111214'/%3E%3Ccircle cx='16' cy='16' r='7' fill='%23e0a45a'/%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="toolbar">
+        <button id="btn-open" class="btn primary" type="button">打开图片</button>
+        <span id="filename" class="filename"></span>
+        <span class="spacer"></span>
+        <button id="btn-zoom" class="btn" type="button" title="切换 适应窗口 / 1:1">适应</button>
+        <button id="btn-undo" class="btn" type="button" title="撤销 (Ctrl+Z)" disabled>撤销</button>
+        <button id="btn-reset" class="btn" type="button" title="重置全部调整 (Ctrl+Shift+Z)" disabled>重置</button>
+        <button id="btn-export" class="btn primary" type="button" disabled>导出 JPEG</button>
+      </header>
+
+      <main class="stage" id="stage">
+        <canvas id="view"></canvas>
+        <div id="empty" class="empty">
+          <p class="empty-title">拖入一张照片</p>
+          <p class="empty-sub">JPEG / PNG · 或按 Ctrl+V 粘贴 · 可多选批量</p>
+        </div>
+        <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+        <div id="notice" class="notice hidden" role="alert" aria-live="assertive">
+          <span id="notice-text" class="notice-text"></span>
+          <button id="notice-close" class="notice-close" type="button" aria-label="关闭提示">×</button>
+        </div>
+      </main>
+
+      <aside class="panel">
+        <section class="panel-block">
+          <h2 class="panel-title">可选项</h2>
+          <div id="modules" class="modules"></div>
+        </section>
+        <section class="panel-block">
+          <h2 class="panel-title">预设</h2>
+          <div id="presets" class="presets"></div>
+          <div class="preset-actions">
+            <button id="btn-preset-save" class="btn small" type="button">存为预设</button>
+            <button id="btn-preset-import" class="btn small" type="button">导入</button>
+            <button id="btn-preset-export" class="btn small" type="button">导出</button>
+          </div>
+        </section>
+        <section class="panel-block">
+          <h2 class="panel-title">风格</h2>
+          <div id="luts" class="presets"></div>
+          <div class="preset-actions">
+            <button id="btn-lut-import" class="btn small" type="button">导入 .cube</button>
+            <button id="btn-lut-learn" class="btn small" type="button">从参考图学习</button>
+            <button id="btn-lut-export" class="btn small" type="button">导出 .cube</button>
+          </div>
+        </section>
+      </aside>
+
+      <footer class="sliders" id="sliders"></footer>
+
+      <input id="file-input" type="file" accept="image/jpeg,image/png,.jpg,.jpeg,.png" multiple hidden />
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

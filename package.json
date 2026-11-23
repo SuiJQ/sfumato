@@ -1,0 +1,22 @@
+{
+  "name": "sfumato",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Sfumato — 本地优先的照片润色工具：无蒙版、无后端、无网络请求",
+  "scripts": {
+    "dev": "vite",
+    "typecheck": "tsc --noEmit",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview --port 4173 --strictPort",
+    "serve": "python3 -m http.server 4173 --directory dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "vite": "^8.3.8"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "^1.2.3",
+    "onnxruntime-web": "^1.23.2"
+  }
+}
