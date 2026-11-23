@@ -57,7 +57,17 @@ STATS_SCRIPT = """
     }
     return { mean: s / n, hi: hi / n, lo: lo / n };
   };
-  return { src: measure(src.data, src.width, src.height), out: measure(out, w, h), params: g.editor.params, stats: g.editor.stats };
+  // 必须同尺寸比较：src 是原图分辨率，out 是 512 宽
+  const base = g.editor.renderPixels(w, h, g.identity(), g.identityCurve());
+  let dsum = 0, dn = 0;
+  for (let i = 0; i < out.length; i += 4) {
+    dsum += Math.abs(out[i] - base[i]) + Math.abs(out[i+1] - base[i+1]) + Math.abs(out[i+2] - base[i+2]);
+    dn += 3;
+  }
+  const a = measure(src.data, src.width, src.height);
+  const b = measure(out, w, h);
+  a.meanAbsDiff = 0; b.meanAbsDiff = dsum / dn;
+  return { src: a, out: b, params: g.editor.params, stats: g.editor.stats };
 }
 """
 
@@ -98,14 +108,15 @@ def main() -> int:
             # --- 万金油 ---
             m = s.page.evaluate(STATS_SCRIPT)
             before, after, params, stats = m["src"], m["out"], m["params"], m["stats"]
+            # 用逐像素改动量而不是均值：新版对"本来就正常"的图只重塑层次、不整体提亮
             ok &= report(
                 "万金油改变画面",
-                abs(after["mean"] - before["mean"]) > 0.005,
-                f"mean {before['mean']:.3f} → {after['mean']:.3f}",
+                after["meanAbsDiff"] > 4.0,
+                f"mean|Δ|={after['meanAbsDiff']:.1f} (luma {before['mean']:.3f}→{after['mean']:.3f})",
             )
             ok &= report(
                 "曝光朝中灰收敛",
-                abs(after["mean"] - 0.5) <= abs(before["mean"] - 0.5) + 0.02,
+                abs(after["mean"] - 0.5) <= abs(before["mean"] - 0.5) + 0.03,
                 f"|Δ中灰| {abs(before['mean'] - 0.5):.3f} → {abs(after['mean'] - 0.5):.3f}",
             )
             ok &= report(

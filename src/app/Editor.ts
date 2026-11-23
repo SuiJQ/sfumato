@@ -67,6 +67,7 @@ export class Editor {
   private image: DecodedImage | null = null;
   private statsValue: Stats = emptyStats();
   private curveValue: Float32Array = identityCurve();
+  private curveLift = -1;
   private modulesValue: Modules = defaultModules();
   private lockedValue = new Set<ModuleId>();
   private slidersValue: Sliders = defaultSliders();
@@ -229,12 +230,12 @@ export class Editor {
     stats.noise = { sigma: await this.estimateNoiseNative(decoded.bitmap) };
     this.statsValue = stats;
 
-    this.curveValue = buildCurve(this.statsValue);
-    this.renderer.setCurve(this.curveValue);
+    this.curveLift = -1;
 
     this.lockedValue = new Set();
     this.slidersValue = defaultSliders();
     this.modulesValue = decideModules(this.statsValue, this.lockedValue, defaultModules());
+    this.updateCurve();
 
     this.guardFactor = 1;
     this.guardRetries = 0;
@@ -717,8 +718,22 @@ export class Editor {
   private recompute(): void {
     this.guardFactor = 1;
     this.guardRetries = 0;
+    this.updateCurve();
     this.applyStatsToParams();
     this.scheduleGuard();
+  }
+
+  /**
+   * 曲线只依赖"统计量 + 是否夜景"。夜景不把中灰拉到 0.5：
+   * 实测银河图 p50 从 0.205 被拉到 0.5，整张提亮 67%，噪点和青蓝全出来了。
+   */
+  private updateCurve(): void {
+    // 只对夜景收敛：实测把夜空 p50 从 0.205 拉到 0.5 会让噪点和青蓝一起爆
+    const lift = this.modulesValue.night ? 0.45 : 1;
+    if (lift === this.curveLift) return;
+    this.curveLift = lift;
+    this.curveValue = buildCurve(this.statsValue, 0, lift);
+    this.renderer.setCurve(this.curveValue);
   }
 
   private fitCanvas(): void {

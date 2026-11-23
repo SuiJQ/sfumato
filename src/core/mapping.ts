@@ -9,6 +9,19 @@ import { IDENTITY, withStrength } from './constants';
 import type { LockedModules, Modules, Params, Sliders, Stats } from './types';
 
 const WELL_DONE_SAT = 1.05;
+
+/**
+ * "这张图有多需要被救" 0..1。
+ *
+ * 三位盲测评审的共同批评是：在曝光/对比本来就正常的照片上，
+ * 我们仍然按同一力度提亮 + 加饱和，结果只是"发灰 + 偏色"。
+ * 所以让强度跟着"离理想有多远"走：正常的图少动，糟糕的图多动。
+ */
+export function imageNeed(stats: Stats): number {
+  const exposure = Math.abs(stats.luma.p50 - 0.5) / 0.18;
+  const contrast = (0.8 - (stats.luma.p99 - stats.luma.p01)) / 0.3;
+  return Math.max(0, Math.min(1, Math.max(exposure, contrast)));
+}
 /** 皮肤面积下限：低于此值不做人像处理（避免暖墙、木地板误触发） */
 const SKIN_MIN = 0.005;
 
@@ -30,6 +43,7 @@ export function deriveWellDone(stats: Stats): Params {
   p.knee = clamp(0.88 - stats.clip.hi * 5, 0.66, 0.92);
 
   p.shadowLift = 0.012 + 0.05 * clamp((0.15 - p01) / 0.15, 0, 1);
+
   p.sat = WELL_DONE_SAT;
 
   // 噪点重就少给细节，避免"修完更脏"

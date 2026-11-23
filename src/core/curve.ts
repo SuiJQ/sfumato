@@ -78,7 +78,11 @@ export function identityCurve(): Float32Array {
  *
  * 锚点必须 clamp —— 这是"万金油不翻车"的核心：极端直方图不会被拉爆。
  */
-export function buildCurve(stats: Stats, ev = 0): Float32Array {
+/**
+ * @param ev   曝光补偿（用于把锚点换算到"加完曝光"的坐标系）
+ * @param lift 中灰拉升强度：1 = 完全拉到 0.5；夜景用 0.45，避免把夜空提成灰
+ */
+export function buildCurve(stats: Stats, ev = 0, lift = 1): Float32Array {
   // 曲线在 EV 之后才作用，所以锚点也必须换算到"加完曝光"的坐标系里，
   // 否则中灰会被曝光和曲线各对齐一次（p50=0.25 时会被推到 ≈0.55）。
   const gain = Math.pow(2, ev);
@@ -90,7 +94,8 @@ export function buildCurve(stats: Stats, ev = 0): Float32Array {
   const x3 = clamp(warp(clamp(stats.luma.p99, 0.72, 0.995)), x2 + 0.02, 0.999);
 
   const xs = [0, x1, Math.max(x2, x1 + 0.02), Math.max(x3, x2 + 0.02), 1];
-  const ys = [0, 0.02, 0.5, 0.95, 1];
+  const mid = clamp(x2 + (0.5 - x2) * clamp(lift, 0, 1), 0.05, 0.9);
+  const ys = [0, 0.02, mid, 0.95, 1];
 
   // 保证严格单调
   for (let i = 1; i < xs.length; i++) {
