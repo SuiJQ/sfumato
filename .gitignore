@@ -6,3 +6,5 @@ tests/assets/*.png
 *.log
 tests/web/
 tests/edge/
+tests/blind/
+tests/blind2/

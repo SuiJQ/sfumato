@@ -202,7 +202,8 @@ void main() {
   //     所以在皮肤区域主动收掉一半，背景该锐还是锐。
   float skinGuard = 1.0 - 0.55 * wSkin;
   float Lraw = luma(c);
-  float guard = smoothstep(0.02, 0.15, Ll) * (1.0 - smoothstep(0.85, 1.0, Ll));
+  // 高光区只压 55%，完全清零会把云、雪、叶隙的纹理抹平（实测纹理能量 -48%）
+  float guard = smoothstep(0.02, 0.15, Ll) * (1.0 - 0.55 * smoothstep(0.85, 1.0, Ll));
   float blurL = luma(textureLod(u_tex, uv, u_p[1].w).rgb);
   e += (Lraw - blurL) * u_p[1].z * guard * skinGuard;
 

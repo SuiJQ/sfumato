@@ -90,7 +90,7 @@ export function buildCurve(stats: Stats, ev = 0): Float32Array {
   const x3 = clamp(warp(clamp(stats.luma.p99, 0.72, 0.995)), x2 + 0.02, 0.999);
 
   const xs = [0, x1, Math.max(x2, x1 + 0.02), Math.max(x3, x2 + 0.02), 1];
-  const ys = [0, 0.02, 0.5, 0.97, 1];
+  const ys = [0, 0.02, 0.5, 0.95, 1];
 
   // 保证严格单调
   for (let i = 1; i < xs.length; i++) {

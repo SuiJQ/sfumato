@@ -8,7 +8,7 @@ import { clamp } from './color';
 import { IDENTITY, withStrength } from './constants';
 import type { LockedModules, Modules, Params, Sliders, Stats } from './types';
 
-const WELL_DONE_SAT = 1.06;
+const WELL_DONE_SAT = 1.05;
 /** 皮肤面积下限：低于此值不做人像处理（避免暖墙、木地板误触发） */
 const SKIN_MIN = 0.005;
 
@@ -27,7 +27,7 @@ export function deriveWellDone(stats: Stats): Params {
   p.tint = clamp(-1.5 * stats.chroma.meanA, -0.15, 0.15);
 
   // 裁切越多，高光越早开始压
-  p.knee = clamp(0.84 - stats.clip.hi * 6, 0.62, 0.9);
+  p.knee = clamp(0.88 - stats.clip.hi * 5, 0.66, 0.92);
 
   p.shadowLift = 0.012 + 0.05 * clamp((0.15 - p01) / 0.15, 0, 1);
   p.sat = WELL_DONE_SAT;
@@ -51,7 +51,7 @@ export function applyModules(base: Params, modules: Modules, stats: Stats): Para
     p.satSkin = 0.96;
     p.skinNormStrength = 0.55;
     p.lumaSkin = 0.010;
-    p.skinSoften = 0.35;
+    p.skinSoften = 0.22;
     p.skinTargetHue = 0.9;
     p.skinTargetSat = 0.085;
   }
@@ -61,13 +61,13 @@ export function applyModules(base: Params, modules: Modules, stats: Stats): Para
   }
 
   if (modules.sky && stats.regions.sky > 0.02) {
-    p.satSky = 1.10;
+    p.satSky = 1.06;
     p.hueSky = 0; // 不再旋转色相：云/晚霞本身带色，一转就偏
     p.lumaSky = -0.015;
   }
 
   if (modules.foliage && stats.regions.green > 0.02) {
-    p.satGreen = 1.1;
+    p.satGreen = 1.04;
     p.hueGreen = -0.02;
     p.lumaGreen = 0;
   }
@@ -86,7 +86,9 @@ export function applyModules(base: Params, modules: Modules, stats: Stats): Para
   }
 
   if (modules.night) {
-    p.ev += 0.15;
+    p.ev += 0.12;
+    // 夜空本来就偏冷，天模块再 +6% 饱和会变成"蓝滤镜"，这里压回去
+    p.satSky = Math.min(p.satSky, 1.02);
     p.sat = Math.max(p.sat, 1.05);
     p.lcGain += 0.04;
   }
