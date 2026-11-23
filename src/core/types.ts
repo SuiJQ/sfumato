@@ -94,7 +94,7 @@ export interface Params {
 
   skinTargetHue: number;
   skinTargetSat: number;
-  faceLumaBoost: number;
+  skinSoften: number;
   lumaEye: number;
 }
 

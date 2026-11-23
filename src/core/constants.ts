@@ -46,7 +46,7 @@ export const IDENTITY: Readonly<Params> = Object.freeze({
 
   skinTargetHue: 0.85,
   skinTargetSat: 0.09,
-  faceLumaBoost: 0,
+  skinSoften: 0,
   lumaEye: 0,
 });
 
@@ -73,7 +73,7 @@ export function toUniforms(p: Params): Float32Array {
   set(4, p.lumaSkin, p.lumaSky, p.lumaGreen, p.sharpenAmt);
   set(5, p.sharpenLimit, p.grainAmt, p.grainSize, p.vignetteAmt);
   set(6, p.vignetteRadius, p.vignetteSoftness, p.styleStrength, p.skinNormStrength);
-  set(7, p.skinTargetHue, p.skinTargetSat, p.faceLumaBoost, p.lumaEye);
+  set(7, p.skinTargetHue, p.skinTargetSat, p.skinSoften, p.lumaEye);
   return u;
 }
 

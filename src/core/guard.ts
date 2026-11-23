@@ -47,8 +47,10 @@ export function judge(baseline: GuardMetrics, out: GuardMetrics): GuardVerdict {
   if (out.lo > baseline.lo + 0.005) {
     return { ok: false, factor: 0.7, reason: '暗部死黑' };
   }
-  if (out.sigma > baseline.sigma * 1.2 + 0.002) {
-    return { ok: false, factor: 0.7, reason: '噪点增加' };
+  // 曲线提亮 + 局部对比本身就会放大已有噪声（实测 +20% 是正常的），
+  // 1.2 倍阈值会把每一张照片都判成"变脏"。只有真的翻倍且绝对量明显才拦。
+  if (out.sigma > baseline.sigma * 2.2 + 0.006) {
+    return { ok: false, factor: 0.7, reason: '噪点明显增加' };
   }
   return { ok: true, factor: 1, reason: '' };
 }

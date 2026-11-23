@@ -107,36 +107,29 @@ html, body {
 .empty-sub { margin: 0; font-size: 12px; }
 .stage.dragover { outline: 2px dashed var(--accent); outline-offset: -12px; }
 
-/* toast：瞬时进度/成功，自动消失 */
+/* toast：瞬时进度/成功，放在工具栏里，绝不遮挡照片 */
 .toast {
-  position: absolute;
-  left: 12px;
-  bottom: 12px;
-  padding: 6px 10px;
-  border-radius: 999px;
-  background: #000000e6;
-  color: var(--fg);
+  margin-left: 10px;
+  color: var(--accent);
   font-size: 12px;
-  border: 1px solid #ffffff1a;
-  max-width: 60%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 40ch;
 }
 
-/* notice：常驻告警（守门/错误），必须显式关闭 */
+/* notice：常驻告警，放在侧栏顶部，绝不遮挡照片 */
 .notice {
-  position: absolute;
-  left: 12px;
-  bottom: 52px;
-  right: 12px;
-  max-width: 560px;
   display: flex;
-  align-items: center;
-  gap: 10px;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
   padding: 8px 10px;
   border-radius: var(--radius);
   background: #0b0c0e;
   border: 1px solid var(--line);
   font-size: 12px;
-  line-height: 1.45;
+  line-height: 1.5;
 }
 .notice[data-level="error"] { border-color: #5a2b2b; }
 .notice[data-level="guard"] { border-color: #5a4a2b; }

@@ -229,6 +229,9 @@ export class Editor {
     stats.noise = { sigma: await this.estimateNoiseNative(decoded.bitmap) };
     this.statsValue = stats;
 
+    this.curveValue = buildCurve(this.statsValue);
+    this.renderer.setCurve(this.curveValue);
+
     this.lockedValue = new Set();
     this.slidersValue = defaultSliders();
     this.modulesValue = decideModules(this.statsValue, this.lockedValue, defaultModules());
@@ -708,11 +711,6 @@ export class Editor {
     );
     this.paramsValue = { ...base, mipLevel: mipLevelFor(maxDim) };
     this.uniformsValue = toUniforms(this.paramsValue);
-
-    // 曲线锚点依赖 ev，滑杆一动 ev 就变，必须同步重建（256 点，成本可忽略）
-    const curve = buildCurve(this.statsValue, this.paramsValue.ev);
-    this.curveValue = curve;
-    this.renderer.setCurve(curve);
   }
 
   /** 用户驱动的变更：重置守门系数并安排一次自检 */

@@ -11,6 +11,7 @@
       <header class="toolbar">
         <button id="btn-open" class="btn primary" type="button">打开图片</button>
         <span id="filename" class="filename"></span>
+        <span id="toast" class="toast hidden" role="status" aria-live="polite"></span>
         <span class="spacer"></span>
         <button id="btn-zoom" class="btn" type="button" title="切换 适应窗口 / 1:1">适应</button>
         <button id="btn-undo" class="btn" type="button" title="撤销 (Ctrl+Z)" disabled>撤销</button>
@@ -24,14 +25,13 @@
           <p class="empty-title">拖入一张照片</p>
           <p class="empty-sub">JPEG / PNG · 或按 Ctrl+V 粘贴 · 可多选批量</p>
         </div>
-        <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+      </main>
+
+      <aside class="panel">
         <div id="notice" class="notice hidden" role="alert" aria-live="assertive">
           <span id="notice-text" class="notice-text"></span>
           <button id="notice-close" class="notice-close" type="button" aria-label="关闭提示">×</button>
         </div>
-      </main>
-
-      <aside class="panel">
         <section class="panel-block">
           <h2 class="panel-title">可选项</h2>
           <div id="modules" class="modules"></div>

@@ -17,8 +17,10 @@ export function deriveWellDone(stats: Stats): Params {
   const p: Params = { ...IDENTITY };
   const { p01, p50 } = stats.luma;
 
-  // 曝光对齐中灰；限制在 ±1.2 档，再打七折，避免暗图被拉成灰雾
-  p.ev = clamp(Math.log2(0.5 / Math.max(p50, 0.05)), -1.2, 1.2) * 0.7;
+  // 不再用 EV 做中灰对齐：曲线已经把 p50 映射到 0.5，
+  // 两者叠加会让"亮"滑杆和曲线互相抵消（实测 +100 反而更暗）
+  p.ev = 0;
+  void p50;
 
   // 灰世界，弱化：只修正明显偏色，不动夕阳
   p.temp = clamp(-1.5 * stats.chroma.meanB, -0.2, 0.2);
@@ -32,8 +34,8 @@ export function deriveWellDone(stats: Stats): Params {
 
   // 噪点重就少给细节，避免"修完更脏"
   const noise = stats.noise.sigma;
-  p.lcGain = 0.3 * clamp(1 - noise / 0.06, 0.2, 1);
-  p.sharpenAmt = 0.3 * clamp(1 - noise / 0.08, 0.2, 1);
+  p.lcGain = 0.24 * clamp(1 - noise / 0.06, 0.2, 1);
+  p.sharpenAmt = 0.22 * clamp(1 - noise / 0.08, 0.2, 1);
 
   // 全局强度：噪点大的图自动收手
   p.s = noise > 0.05 ? 0.7 : 1;
@@ -47,9 +49,10 @@ export function applyModules(base: Params, modules: Modules, stats: Stats): Para
 
   if (modules.portrait && stats.regions.skin > SKIN_MIN) {
     p.satSkin = 0.96;
-    p.skinNormStrength = 0.65;
-    p.lumaSkin = 0.015;
-    p.skinTargetHue = 0.85;
+    p.skinNormStrength = 0.55;
+    p.lumaSkin = 0.010;
+    p.skinSoften = 0.35;
+    p.skinTargetHue = 0.9;
     p.skinTargetSat = 0.085;
   }
   if (modules.portrait && stats.face.count > 0) {
@@ -58,9 +61,9 @@ export function applyModules(base: Params, modules: Modules, stats: Stats): Para
   }
 
   if (modules.sky && stats.regions.sky > 0.02) {
-    p.satSky = 1.18;
-    p.hueSky = -0.04; // 略微偏蓝
-    p.lumaSky = -0.02;
+    p.satSky = 1.10;
+    p.hueSky = 0; // 不再旋转色相：云/晚霞本身带色，一转就偏
+    p.lumaSky = -0.015;
   }
 
   if (modules.foliage && stats.regions.green > 0.02) {
@@ -126,7 +129,9 @@ export function decideModules(stats: Stats, locked: LockedModules, current: Modu
   const set = (id: keyof Modules, v: boolean): void => {
     if (!locked.has(id)) out[id] = v;
   };
-  set('portrait', stats.face.count > 0 || (stats.regions.person > 0.02 && stats.regions.skin > SKIN_MIN));
+  // 只认人脸。曾用"人像占比 + 肤色占比"兜底，结果食物特写被 MODNet 误判出 12% 的"人"，
+  // 肤色归一作用在肉和木纹上，整张图被拉灰。
+  set('portrait', stats.face.count > 0);
   set('sky', stats.regions.sky > 0.08);
   set('foliage', stats.regions.green > 0.1);
   set('dehaze', stats.luma.p99 - stats.luma.p01 < 0.65);

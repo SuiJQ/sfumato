@@ -227,8 +227,10 @@ function buildMasks(
       skin[i] = Math.max(0, skinScore) * (alphaHas ? Math.max(person[i], 0.15) : 1);
 
       // 天空：上部 + 偏蓝或高亮低饱和
-      const blueish = b > r + 0.02 && b > 0.35;
-      const overcast = lum > 0.72 && sat < 0.16;
+      const blueish = b > r + 0.03 && b > 0.32;
+      // "亮而低饱和"只在高处才算天空：云海、雾、白色墙面都在地平线以下，
+      // 误判进来会被 sky 模块加饱和，整片云被染成紫色（实测）
+      const overcast = y / mh < 0.35 && lum > 0.72 && sat < 0.16;
       const upper = 1 - Math.min(1, Math.max(0, (y / mh - 0.45) / 0.25));
       sky[i] = (blueish || overcast ? 1 : 0) * upper * (alphaHas ? 1 - person[i] : 1);
 

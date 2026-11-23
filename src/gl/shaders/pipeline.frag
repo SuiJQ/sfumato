@@ -178,29 +178,38 @@ void main() {
   float Ll = Lc + u_p[1].y * (1.0 - Lc) * (1.0 - Lc);
   e *= Ll / max(L, 1e-4);
 
-  // 4b. 眼神光：只有 FaceMesh 给出眼睛区域时才生效
-  float wEye = u_hasEye > 0.5 ? texture(u_mask2, uv).r : 0.0;
-  e *= 1.0 + u_p[7].w * wEye;
-
-  // 5. 局部对比 + 锐化（在原图的编码域取细节，量级由参数吸收）
-  float Lraw = luma(c);
-  float guard = smoothstep(0.02, 0.15, Ll) * (1.0 - smoothstep(0.85, 1.0, Ll));
-  float blurL = luma(textureLod(u_tex, uv, u_p[1].w).rgb);
-  e += (Lraw - blurL) * u_p[1].z * guard;
-
-  float smL = luma(textureLod(u_tex, uv, 1.0).rgb);
-  float d = clamp(Lraw - smL, -u_p[5].x, u_p[5].x) * u_p[4].w * (1.0 + 0.8 * wEye);
-  e += d;
-
-  // 6. 色度运算（Oklab）
-  vec3 lin2 = srgbToLinear(max(e, 0.0));
-  vec3 lab = linearToOklab(max(lin2, 0.0));
-
+  // 5. 区域权重提前取：皮肤要少加纹理，眼睛要多加
   vec4 m = sampleMask(uv);
   float wSky = m.b;
   float wSkin = m.g;
   float wGreen = m.a;
   float wRest = max(0.0, 1.0 - wSky - wSkin - wGreen);
+
+  // 5a. 眼神光：只有 FaceMesh 给出眼睛区域时才生效
+  float wEye = u_hasEye > 0.5 ? texture(u_mask2, uv).r : 0.0;
+  e *= 1.0 + u_p[7].w * wEye;
+
+  // 5b. 局部对比 + 锐化（在原图的编码域取细节，量级由参数吸收）
+  //     人脸在 1:1 下对锐化极敏感：毛孔、胡渣、皮肤纹理都会被放大成"砂纸"，
+  //     所以在皮肤区域主动收掉一半，背景该锐还是锐。
+  float skinGuard = 1.0 - 0.55 * wSkin;
+  float Lraw = luma(c);
+  float guard = smoothstep(0.02, 0.15, Ll) * (1.0 - smoothstep(0.85, 1.0, Ll));
+  float blurL = luma(textureLod(u_tex, uv, u_p[1].w).rgb);
+  e += (Lraw - blurL) * u_p[1].z * guard * skinGuard;
+
+  float smL = luma(textureLod(u_tex, uv, 1.0).rgb);
+  float d = clamp(Lraw - smL, -u_p[5].x, u_p[5].x) * u_p[4].w
+          * (1.0 + 0.8 * wEye) * (1.0 - 0.45 * wSkin);
+  e += d;
+
+  // 5c. 皮肤柔化：把高频往 mip 低频拉，只作用在皮肤上，强度由"人像优化"控制
+  float soften = clamp(u_p[7].z, 0.0, 1.0) * wSkin;
+  e += (blurL - Lraw) * soften;
+
+  // 6. 色度运算（Oklab）
+  vec3 lin2 = srgbToLinear(max(e, 0.0));
+  vec3 lab = linearToOklab(max(lin2, 0.0));
 
   float satMul = u_p[2].x * (
       1.0

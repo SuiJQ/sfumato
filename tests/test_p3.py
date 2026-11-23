@@ -68,26 +68,37 @@ def main() -> int:
             )
 
             # 关掉人像模块后，画面应当发生变化（说明区域增益真的生效）
+            # 只在"区域权重覆盖到的地方"比较：全图均值会被大面积背景稀释，
+            # 掩盖模块其实生效/没生效
             diff = s.page.evaluate(
                 """() => {
-                    const g = window.__grain;
-                    const s = g.editor.size;
-                    const w = 320, h = Math.round(320 * s.height / s.width);
-                    const on = g.editor.renderPixels(w, h, g.editor.params, g.editor.curve);
-                    g.editor.setModule('portrait', false);
-                    g.editor.setModule('sky', false);
-                    const off = g.editor.renderPixels(w, h, g.editor.params, g.editor.curve);
+                    const g = window.__grain, e = g.editor;
+                    const s = e.size, w = 320, h = Math.round(320 * s.height / s.width);
+                    const on = e.renderPixels(w, h, e.params, e.curve);
+                    e.setModule('portrait', false);
+                    e.setModule('sky', false);
+                    const off = e.renderPixels(w, h, e.params, e.curve);
+                    e.setModule('portrait', true);
+                    e.setModule('sky', true);
+
+                    const mi = e.maskInfo;
                     let sum = 0, n = 0;
-                    for (let i = 0; i < on.length; i += 4) {
-                        sum += Math.abs(on[i]-off[i]) + Math.abs(on[i+1]-off[i+1]) + Math.abs(on[i+2]-off[i+2]);
-                        n += 3;
+                    for (let y = 0; y < h; y++) {
+                      for (let x = 0; x < w; x++) {
+                        const mx = Math.min(mi.width - 1, Math.floor(x / w * mi.width));
+                        const my = Math.min(mi.height - 1, Math.floor(y / h * mi.height));
+                        const mi4 = (my * mi.width + mx) * 4;
+                        const wgt = Math.max(mi.data[mi4 + 1], mi.data[mi4 + 2]) / 255; // 皮肤 / 天空
+                        if (wgt < 0.5) continue;
+                        const i = (y * w + x) * 4;
+                        sum += (Math.abs(on[i]-off[i]) + Math.abs(on[i+1]-off[i+1]) + Math.abs(on[i+2]-off[i+2])) / 3;
+                        n++;
+                      }
                     }
-                    g.editor.setModule('portrait', true);
-                    g.editor.setModule('sky', true);
-                    return sum / n;
+                    return n ? sum / n : 0;
                 }"""
             )
-            ok &= report("区域增益改变了画面", diff > 0.4, f"meanΔ={diff:.2f}")
+            ok &= report("区域增益改变了画面（区域内）", diff > 1.0, f"meanΔ={diff:.2f}")
 
             s.page.wait_for_timeout(200)
             s.page.screenshot(path=str(OUT / "p3_portrait.png"))
